@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f7f5f0">
+  <title>Grano — Punto de venta</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%8D%B5%3C/text%3E%3C/svg%3E">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Estructura principal: navegación y contenido de la caja. -->
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#" aria-label="Grano, inicio">
+        <span class="brand-icon" aria-hidden="true">g</span>
+        <span><strong>grano</strong><small>café &amp; cosas ricas</small></span>
+      </a>
+
+      <p class="nav-caption">Punto de venta</p>
+      <!-- En móvil, estos enlaces aparecen como barra de navegación inferior. -->
+      <nav class="side-nav" aria-label="Navegación principal">
+        <a class="nav-link selected" href="#venta"><span class="nav-icon" aria-hidden="true">▦</span><span class="nav-label">Venta rápida</span></a>
+        <a class="nav-link" href="#corte"><span class="nav-icon" aria-hidden="true">▤</span><span class="nav-label">Corte de caja</span></a>
+        <a class="nav-link" href="#registro"><span class="nav-icon" aria-hidden="true">◷</span><span class="nav-label">Registro de ventas</span></a>
+        <a class="nav-link" href="#productos"><span class="nav-icon" aria-hidden="true">◇</span><span class="nav-label">Productos</span></a>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <div class="shift-card">
+          <span class="online-dot"></span>
+          <div><strong id="shift-status">Iniciando caja</strong><small id="shift-label">Caja 01 · Cafetería</small></div>
+        </div>
+        <div class="user-card">
+          <div class="avatar" id="cashier-avatar">?</div>
+          <div><strong id="cashier-name">Sin cajero</strong><small id="cashier-role">Sesión cerrada</small></div>
+          <span class="user-menu" aria-hidden="true">···</span>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main-content" id="venta">
+      <!-- Encabezado y fecha real del dispositivo, actualizada desde app.js. -->
+      <header class="page-header">
+        <div>
+          <p class="date-label" id="current-date"></p>
+          <h1>Venta rápida <span class="wave">☀</span></h1>
+          <p class="page-subtitle">Selecciona productos y prepara el cobro.</p>
+        </div>
+        <div class="header-actions">
+          <span class="demo-badge"><span></span>Vista de demostración</span>
+          <button class="icon-button" type="button" aria-label="Notificaciones">♧<i></i></button>
+        </div>
+      </header>
+
+      <!-- Resumen de las ventas, órdenes y ticket promedio del día. -->
+      <section class="summary-strip" aria-label="Resumen del turno">
+        <article class="summary-card">
+          <span class="summary-icon sales-icon">↗</span>
+          <div><p>Ventas del día</p><strong id="daily-sales">$0.00</strong><small class="positive">Turno actual</small></div>
+        </article>
+        <article class="summary-card">
+          <span class="summary-icon orders-icon">▤</span>
+          <div><p>Órdenes</p><strong id="daily-orders">0</strong><small>En este turno</small></div>
+        </article>
+        <article class="summary-card">
+          <span class="summary-icon average-icon">◉</span>
+          <div><p>Ticket promedio</p><strong id="average-ticket">$0.00</strong><small>Por orden</small></div>
+        </article>
+      </section>
+
+      <!-- Bootstrap apila catálogo y cobro hasta alcanzar el ancho de escritorio. -->
+      <div class="pos-layout row g-3">
+        <section class="catalog-panel col-12 col-xl-8" id="productos" aria-labelledby="catalog-title">
+          <div class="section-header">
+            <div>
+              <p class="section-kicker">MENÚ DE HOY</p>
+              <h2 id="catalog-title">Productos rápidos</h2>
+            </div>
+            <label class="search-box">
+              <span aria-hidden="true">⌕</span>
+              <input class="form-control" id="product-search" type="search" placeholder="Buscar producto" aria-label="Buscar producto">
+              <kbd>/</kbd>
+            </label>
+          </div>
+
+          <div class="category-list" aria-label="Categorías de productos">
+            <button class="category-pill current" type="button" data-category="Todos">Todos <span>9</span></button>
+            <button class="category-pill" type="button" data-category="Café">Café</button>
+            <button class="category-pill" type="button" data-category="Frías">Frías</button>
+            <button class="category-pill" type="button" data-category="Panadería">Panadería</button>
+            <button class="category-pill" type="button" data-category="Comida">Comida</button>
+          </div>
+
+          <!-- Para editar/agregar productos: modifica aquí nombre, descripción, precio y categoría. -->
+          <div class="product-grid row row-cols-2 row-cols-xl-3 g-3 mx-0 mt-0">
+            <div class="col">
+              <button class="product-card w-100 h-100" type="button" data-category="Café" data-price="2.50">
+                <span class="product-picture coffee-bg"><span>☕</span><em>Favorito</em></span>
+                <span class="product-copy"><strong>Espresso doble</strong><small>Doble · 60 ml</small><b>$2.50 <i>+</i></b></span>
+              </button>
+            </div>
+            <div class="col">
+              <button class="product-card w-100 h-100" type="button" data-category="Café" data-price="3.75">
+                <span class="product-picture cappuccino-bg"><span>☕</span><em>Popular</em></span>
+                <span class="product-copy"><strong>Cappuccino</strong><small>Espresso · leche · espuma</small><b>$3.75 <i>+</i></b></span>
+              </button>
+            </div>
+            <div class="col">
+              <button class="product-card w-100 h-100" type="button" data-category="Café" data-price="4.25">
+                <span class="product-picture latte-bg"><span>🥛</span></span>
+                <span class="product-copy"><strong>Latte vainilla</strong><small>Leche · vainilla natural</small><b>$4.25 <i>+</i></b></span>
+              </button>
+            </div>
+            <div class="col">
+              <button class="product-card w-100 h-100" type="button" data-category="Frías" data-price="4.00">
+                <span class="product-picture cold-bg"><span>🧋</span><em>Frío</em></span>
+                <span class="product-copy"><strong>Cold brew</strong><small>Infusión en frío · 16 oz</small><b>$4.00 <i>+</i></b></span>
+              </button>
+            </div>
+            <div class="col">
+              <button class="product-card w-100 h-100" type="button" data-category="Café" data-price="4.50">
+                <span class="product-picture tea-bg"><span>🍵</span></span>
+                <span class="product-copy"><strong>Matcha latte</strong><small>Matcha japonés · leche</small><b>$4.50 <i>+</i></b></span>
+              </button>
+            </div>
+            <div class="col">
+              <button class="product-card w-100 h-100" type="button" data-category="Panadería" data-price="2.75">
+                <span class="product-picture bakery-bg"><span>🥐</span><em>Del día</em></span>
+                <span class="product-copy"><strong>Croissant</strong><small>Mantequilla · recién horneado</small><b>$2.75 <i>+</i></b></span>
+              </button>
+            </div>
+            <div class="col">
+              <button class="product-card w-100 h-100" type="button" data-category="Comida" data-price="6.50">
+                <span class="product-picture food-bg"><span>🥪</span></span>
+                <span class="product-copy"><strong>Sándwich de la casa</strong><small>Pavo · aguacate · pan rústico</small><b>$6.50 <i>+</i></b></span>
+              </button>
+            </div>
+            <div class="col">
+              <button class="product-card w-100 h-100" type="button" data-category="Frías" data-price="3.50">
+                <span class="product-picture juice-bg"><span>🍊</span></span>
+                <span class="product-copy"><strong>Jugo de naranja</strong><small>Natural · recién exprimido</small><b>$3.50 <i>+</i></b></span>
+              </button>
+            </div>
+            <div class="col">
+              <button class="product-card w-100 h-100" type="button" data-category="Panadería" data-price="3.25">
+                <span class="product-picture dessert-bg"><span>🍰</span></span>
+                <span class="product-copy"><strong>Brownie</strong><small>Chocolate · nuez · artesanal</small><b>$3.25 <i>+</i></b></span>
+              </button>
+            </div>
+          </div>
+          <p class="prototype-note">Productos de demostración · las ventas se guardan en este navegador.</p>
+        </section>
+
+        <!-- Ticket, cobro, cierre de turno y estado del almacenamiento local. -->
+        <aside class="right-column col-12 col-xl-4" aria-label="Cobro y cierre de caja">
+          <section class="ticket-panel" aria-labelledby="ticket-title">
+            <div class="ticket-header">
+              <div><p class="section-kicker">COBRO ACTUAL</p><h2 id="ticket-title">Ticket <span id="ticket-number">#0001</span></h2></div>
+              <button class="text-button" id="new-sale" type="button">Nueva venta</button>
+            </div>
+            <div class="customer-row">
+              <span class="customer-avatar">◉</span>
+              <div><strong>Venta de mostrador</strong><small id="ticket-cashier">Cliente general</small></div>
+              <span class="edit-button" aria-hidden="true">☕</span>
+            </div>
+            <div class="ticket-items" id="ticket-items">
+              <p class="empty-ticket">Tu ticket está vacío. Agrega algo rico ♡</p>
+            </div>
+            <div class="ticket-totals">
+              <div><span>Subtotal</span><strong id="subtotal">$0.00</strong></div>
+              <div><span>Descuento</span><strong class="discount" id="discount">− $0.00</strong></div>
+              <div class="grand-total"><span>Total a pagar</span><strong id="sale-total">$0.00</strong></div>
+            </div>
+            <fieldset class="payment-method">
+              <legend>Método de pago</legend>
+              <label class="payment-choice"><input type="radio" name="payment" value="cash" checked><span>💵</span> Efectivo</label>
+              <label class="payment-choice"><input type="radio" name="payment" value="card"><span>💳</span> Tarjeta</label>
+              <label class="payment-choice"><input type="radio" name="payment" value="transfer"><span>↗</span> Transfer.</label>
+            </fieldset>
+            <div class="cash-details" id="cash-details">
+              <label for="cash-received">Efectivo recibido</label>
+              <div class="cash-input-wrap"><span>$</span><input id="cash-received" type="number" min="0" step="0.01" value="" inputmode="decimal" placeholder="0.00"><small>MXN</small></div>
+              <div class="change-line"><span>Cambio para el cliente</span><strong id="cash-change">$0.00</strong></div>
+            </div>
+            <button class="charge-button" id="charge-sale" type="button" disabled>Cobrar $0.00 <span>→</span></button>
+            <p class="ticket-footnote" id="ticket-footnote">Inicia un turno para comenzar a vender.</p>
+          </section>
+
+          <section class="cashout-panel" id="corte" aria-labelledby="cashout-title">
+            <div class="cashout-header">
+              <span class="cashout-icon">▥</span>
+              <div><p class="section-kicker">RESUMEN DEL TURNO</p><h2 id="cashout-title">Corte de caja</h2></div>
+              <span class="open-label" id="cashout-status">Cerrado</span>
+            </div>
+            <div class="cashout-rows">
+              <div><span>Fondo inicial</span><strong id="opening-cash">$0.00</strong></div>
+              <div><span>Ventas en efectivo</span><strong id="cash-sales">$0.00</strong></div>
+              <div><span>Ventas con tarjeta</span><strong id="card-sales">$0.00</strong></div>
+              <div><span>Ventas por transferencia</span><strong id="transfer-sales">$0.00</strong></div>
+              <div class="cash-expected"><span>Efectivo a contar (fondo + ventas)</span><strong id="expected-cash">$0.00</strong></div>
+            </div>
+            <button class="cashout-button" id="close-shift" type="button" disabled>Realizar corte de caja <span>↗</span></button>
+          </section>
+
+          <section class="storage-panel" id="registro" aria-labelledby="storage-title">
+            <div class="storage-heading">
+              <div><p class="section-kicker">DATOS DE LA CAJA</p><h2 id="storage-title">Registro estructurado</h2></div>
+              <span class="storage-badge" id="storage-status">Local</span>
+            </div>
+            <div class="storage-chips" aria-label="Entidades del registro">
+              <span>Ventas</span><span>Productos</span><span>Pagos</span>
+            </div>
+            <p id="storage-summary">Ventas y cortes se guardan en este navegador.</p>
+          </section>
+        </aside>
+      </div>
+    </main>
+  </div>
+  <!-- Diálogo para iniciar sesión al abrir la caja o al cambiar de turno. -->
+  <div class="pos-modal-backdrop" id="cashier-modal" hidden>
+    <section class="pos-modal" role="dialog" aria-modal="true" aria-labelledby="cashier-modal-title">
+      <div class="modal-kawaii-icon">☕</div>
+      <p class="section-kicker">CAMBIO DE TURNO</p>
+      <h2 id="cashier-modal-title">¿Quién toma la caja?</h2>
+      <p class="modal-description" id="cashier-modal-description">Ingresa el usuario que iniciará este turno.</p>
+      <form id="cashier-form">
+        <label for="new-cashier">Usuario o nombre del cajero</label>
+        <input id="new-cashier" name="cashier" type="text" maxlength="60" autocomplete="name" required>
+        <label for="new-opening-cash">Fondo inicial de caja</label>
+        <div class="modal-money-input"><span>$</span><input id="new-opening-cash" name="openingCash" type="number" min="0" step="0.01" value="500" required><small>MXN</small></div>
+        <p class="form-error" id="cashier-error" role="alert"></p>
+        <button class="modal-primary" type="submit">Iniciar turno <span>♡</span></button>
+      </form>
+    </section>
+  </div>
+  <!-- Diálogo que calcula y confirma el corte de caja. -->
+  <div class="pos-modal-backdrop" id="cut-modal" hidden>
+    <section class="pos-modal" role="dialog" aria-modal="true" aria-labelledby="cut-modal-title">
+      <div class="modal-kawaii-icon">🧾</div>
+      <p class="section-kicker">CIERRE OBLIGATORIO DE TURNO</p>
+      <h2 id="cut-modal-title">Hagamos el corte</h2>
+      <p class="modal-description" id="cut-description"></p>
+      <div class="cut-summary">
+        <div><span>Fondo inicial (no es venta)</span><strong id="cut-opening">$500.00</strong></div>
+        <div><span>Ventas en efectivo</span><strong id="cut-cash-sales">$0.00</strong></div>
+        <div class="cut-expected-row"><span>Efectivo esperado (fondo + ventas)</span><strong id="cut-expected">$500.00</strong></div>
+        <div><span>Ventas con tarjeta</span><strong id="cut-card">$0.00</strong></div>
+        <div><span>Ventas por transferencia</span><strong id="cut-transfer">$0.00</strong></div>
+      </div>
+      <p class="cut-note">El fondo inicial se mantiene separado de las ventas; solo se suma para comparar el efectivo físico contado.</p>
+      <form id="cut-form">
+        <label for="counted-cash">Efectivo contado en caja</label>
+        <div class="modal-money-input"><span>$</span><input id="counted-cash" type="number" min="0" step="0.01" required><small>MXN</small></div>
+        <div class="change-line cut-difference"><span>Diferencia (sobrante/faltante)</span><strong id="cut-difference">$0.00</strong></div>
+        <p class="form-error" id="cut-error" role="alert"></p>
+        <button class="modal-primary" type="submit">Confirmar corte y cambiar cajero <span>→</span></button>
+        <button class="modal-secondary" id="cancel-cut" type="button">Seguir en este turno</button>
+      </form>
+    </section>
+  </div>
+  <!-- Avisos temporales para confirmar acciones y explicar errores. -->
+  <div class="pos-toast" id="pos-toast" role="status" aria-live="polite"></div>
+  <script src="app.js?v=2" defer></script>
+</body>
+</html>
