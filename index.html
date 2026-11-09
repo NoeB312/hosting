@@ -41,9 +41,9 @@
     @media(min-width:992px){.app-shell{display:flex}.sidebar{position:sticky;top:0;right:auto;bottom:auto;left:auto;width:200px;height:100vh;min-height:0;flex:0 0 200px;flex-direction:column;padding:27px 14px 18px;border-top:0;border-right:1px solid var(--line)}.brand,.nav-caption,.sidebar-bottom{display:block}.side-nav{display:grid;width:auto}.nav-link{flex-direction:row;justify-content:flex-start}.main-content{width:auto;flex:1;padding:27px 22px 38px}}
     @media(min-width:1200px){.pos-layout{grid-template-columns:minmax(0,2fr) minmax(300px,1fr)}.sidebar{width:220px;flex-basis:220px}.main-content{padding-right:30px;padding-left:30px}}
   </style>
-  <!-- Carga el resto de estilos sin bloquear el primer pintado. -->
-  <link rel="preload" href="styles.css?v=4" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link rel="stylesheet" href="styles.css?v=4"></noscript>
+  <!-- Descarga los estilos sin bloquear el primer pintado y evita pedirlos dos veces. -->
+  <link rel="stylesheet" href="styles.css?v=5" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="styles.css?v=5"></noscript>
 </head>
 <body>
   <!-- Estructura principal: navegación y contenido de la caja. -->
