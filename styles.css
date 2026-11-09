@@ -14,6 +14,7 @@
   --green: #8dbb9a;
   --orange: #eca88c;
   --shadow: 0 9px 28px rgba(151, 110, 147, .08);
+  --font-ui: system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -25,12 +26,12 @@ body {
     radial-gradient(ellipse at 2% 93%, rgba(238, 224, 249, .48), transparent 25rem),
     var(--paper);
   color: var(--ink);
-  font: 16px/1.5 "Nunito", sans-serif;
+  font: 16px/1.5 var(--font-ui);
 }
 button, input { font: inherit; }
 button { cursor: pointer; }
 a { color: inherit; text-decoration: none; }
-h1, h2 { font-family: "Quicksand", sans-serif; }
+h1, h2 { font-family: var(--font-ui); }
 h1, h2, p { margin-top: 0; }
 :focus-visible { outline: 2px solid #a477a0; outline-offset: 2px; }
 
@@ -98,7 +99,7 @@ h1, h2, p { margin-top: 0; }
 }
 .date-label { margin: 0; color: #b591b0; font-size: 10px; font-weight: 700; letter-spacing: 1.2px; }
 h1 { margin: 4px 0 3px; font-size: 26px; letter-spacing: -.4px; }
-.wave { color: #e7ad62; font: 400 20px "Nunito", sans-serif; }
+.wave { color: #e7ad62; font: 400 20px var(--font-ui); }
 .page-subtitle { margin: 0; color: #968b99; font-size: 12px; }
 .header-actions { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 8px; }
 .demo-badge {
@@ -214,7 +215,7 @@ h2 { margin: 0; color: #604d62; font-size: 19px; letter-spacing: -.15px; }
   border-radius: 4px;
   background: #fff;
   color: var(--muted);
-  font: 9px "Nunito", sans-serif;
+  font: 9px var(--font-ui);
 }
 .category-list { display: flex; gap: 7px; overflow-x: auto; margin: 13px 0 12px; padding: 0 0 3px; scrollbar-width: none; }
 .category-list::-webkit-scrollbar { display: none; }
@@ -236,8 +237,7 @@ h2 { margin: 0; color: #604d62; font-size: 19px; letter-spacing: -.15px; }
   gap: .75rem;
   margin: 0;
 }
-.product-grid > .col { width: auto; max-width: none; padding: 0; }
-.product-grid > .col[hidden] { display: none; }
+.product-grid > .product-item[hidden] { display: none; }
 .product-card {
   width: 100%;
   height: 100%;
@@ -292,7 +292,7 @@ h2 { margin: 0; color: #604d62; font-size: 19px; letter-spacing: -.15px; }
 .right-column { display: grid; align-content: start; gap: 12px; }
 .ticket-panel { position: relative; overflow: hidden; padding: 15px; background: linear-gradient(180deg, #fffdfd, #fff9fc); }
 .ticket-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
-.ticket-header h2 span { color: #96968d; font: 500 11px "Nunito", sans-serif; }
+.ticket-header h2 span { color: #96968d; font: 500 11px var(--font-ui); }
 .text-button { min-height: 40px; padding: 6px 10px; border: 0; border-radius: 20px; background: var(--accent-light); color: #986e95; font-size: 10px; font-weight: 700; }
 .text-button:disabled { cursor: not-allowed; opacity: .55; }
 .customer-row { display: flex; align-items: center; gap: 9px; padding: 12px 0; border-bottom: 1px solid var(--line); }
@@ -377,7 +377,7 @@ h2 { margin: 0; color: #604d62; font-size: 19px; letter-spacing: -.15px; }
 .pos-modal h2 { font-size: 22px; }
 .modal-description { margin: 7px 0 19px; color: #948695; font-size: 12px; }
 .pos-modal form > label { display: block; margin: 13px 0 6px; color: #726373; font-size: 11px; font-weight: 800; }
-.pos-modal form > input, .modal-money-input { width: 100%; height: 44px; padding: 0 11px; border: 1px solid #eedfe9; border-radius: 11px; outline: 0; background: #fff; color: var(--ink); font: 600 13px "Nunito", sans-serif; }
+.pos-modal form > input, .modal-money-input { width: 100%; height: 44px; padding: 0 11px; border: 1px solid #eedfe9; border-radius: 11px; outline: 0; background: #fff; color: var(--ink); font: 600 13px var(--font-ui); }
 .pos-modal form > input:focus, .modal-money-input:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(201, 158, 196, .16); }
 .modal-money-input { display: flex; align-items: center; gap: 8px; }
 .modal-money-input input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: inherit; font: inherit; }
@@ -434,9 +434,9 @@ body.modal-open { overflow: hidden; }
   .app-shell { display: flex; }
   .sidebar { position: sticky; top: 0; right: auto; bottom: auto; left: auto; width: 200px; height: 100vh; min-height: 0; flex: 0 0 200px; flex-direction: column; padding: 27px 14px 18px; border-top: 0; border-right: 1px solid var(--line); }
   .brand { display: flex; align-items: center; gap: 11px; padding: 0 10px 38px; }
-  .brand-icon { position: relative; display: grid; width: 39px; height: 39px; flex: 0 0 39px; place-items: center; border-radius: 13px; background: linear-gradient(145deg, #eaaec5, #b88db9); color: white; box-shadow: 0 5px 12px rgba(183, 132, 174, .22); font: 700 27px "Quicksand", sans-serif; }
-  .brand-icon::after { position: absolute; top: -5px; right: -5px; color: #e9a1b9; content: "♡"; font: 700 14px "Nunito", sans-serif; }
-  .brand strong { display: block; color: var(--ink); font: 700 20px "Quicksand", sans-serif; letter-spacing: -.5px; }
+  .brand-icon { position: relative; display: grid; width: 39px; height: 39px; flex: 0 0 39px; place-items: center; border-radius: 13px; background: linear-gradient(145deg, #eaaec5, #b88db9); color: white; box-shadow: 0 5px 12px rgba(183, 132, 174, .22); font: 700 27px var(--font-ui); }
+  .brand-icon::after { position: absolute; top: -5px; right: -5px; color: #e9a1b9; content: "♡"; font: 700 14px var(--font-ui); }
+  .brand strong { display: block; color: var(--ink); font: 700 20px var(--font-ui); letter-spacing: -.5px; }
   .brand small { display: block; margin-top: 1px; color: var(--muted); font-size: 9px; letter-spacing: .8px; text-transform: uppercase; }
   .nav-caption { display: block; margin: 0 10px 10px; color: #c09bb9; font-size: 10px; font-weight: 700; letter-spacing: 1.15px; }
   .side-nav { display: grid; width: auto; gap: 5px; }

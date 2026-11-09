@@ -6,11 +6,8 @@
   <meta name="theme-color" content="#f7f5f0">
   <title>Grano — Punto de venta</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%8D%B5%3C/text%3E%3C/svg%3E">
-  <!-- Bootstrap carga sin bloquear el primer pintado; la rejilla base está en styles.css. -->
-  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-  <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-  <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"></noscript>
-  <link rel="stylesheet" href="styles.css">
+  <!-- Estilos y rejilla locales para evitar esperar a un CDN externo. -->
+  <link rel="stylesheet" href="styles.css?v=3">
 </head>
 <body>
   <!-- Estructura principal: navegación y contenido de la caja. -->
@@ -73,9 +70,9 @@
         </article>
       </section>
 
-      <!-- Bootstrap apila catálogo y cobro hasta alcanzar el ancho de escritorio. -->
-      <div class="pos-layout row g-3">
-        <section class="catalog-panel col-12 col-xl-8" id="productos" aria-labelledby="catalog-title">
+      <!-- La rejilla local apila catálogo y cobro en móvil y los separa en escritorio. -->
+      <div class="pos-layout">
+        <section class="catalog-panel" id="productos" aria-labelledby="catalog-title">
           <div class="section-header">
             <div>
               <p class="section-kicker">MENÚ DE HOY</p>
@@ -83,7 +80,7 @@
             </div>
             <label class="search-box">
               <span aria-hidden="true">⌕</span>
-              <input class="form-control" id="product-search" type="search" placeholder="Buscar producto" aria-label="Buscar producto">
+              <input id="product-search" type="search" placeholder="Buscar producto" aria-label="Buscar producto">
               <kbd>/</kbd>
             </label>
           </div>
@@ -97,57 +94,57 @@
           </div>
 
           <!-- Para editar/agregar productos: modifica aquí nombre, descripción, precio y categoría. -->
-          <div class="product-grid row row-cols-2 row-cols-xl-3 g-3 mx-0 mt-0">
-            <div class="col">
-              <button class="product-card w-100 h-100" type="button" data-category="Café" data-price="2.50">
+          <div class="product-grid">
+            <div class="product-item">
+              <button class="product-card" type="button" data-category="Café" data-price="2.50">
                 <span class="product-picture coffee-bg"><span>☕</span><em>Favorito</em></span>
                 <span class="product-copy"><strong>Espresso doble</strong><small>Doble · 60 ml</small><b>$2.50 <i>+</i></b></span>
               </button>
             </div>
-            <div class="col">
-              <button class="product-card w-100 h-100" type="button" data-category="Café" data-price="3.75">
+            <div class="product-item">
+              <button class="product-card" type="button" data-category="Café" data-price="3.75">
                 <span class="product-picture cappuccino-bg"><span>☕</span><em>Popular</em></span>
                 <span class="product-copy"><strong>Cappuccino</strong><small>Espresso · leche · espuma</small><b>$3.75 <i>+</i></b></span>
               </button>
             </div>
-            <div class="col">
-              <button class="product-card w-100 h-100" type="button" data-category="Café" data-price="4.25">
+            <div class="product-item">
+              <button class="product-card" type="button" data-category="Café" data-price="4.25">
                 <span class="product-picture latte-bg"><span>🥛</span></span>
                 <span class="product-copy"><strong>Latte vainilla</strong><small>Leche · vainilla natural</small><b>$4.25 <i>+</i></b></span>
               </button>
             </div>
-            <div class="col">
-              <button class="product-card w-100 h-100" type="button" data-category="Frías" data-price="4.00">
+            <div class="product-item">
+              <button class="product-card" type="button" data-category="Frías" data-price="4.00">
                 <span class="product-picture cold-bg"><span>🧋</span><em>Frío</em></span>
                 <span class="product-copy"><strong>Cold brew</strong><small>Infusión en frío · 16 oz</small><b>$4.00 <i>+</i></b></span>
               </button>
             </div>
-            <div class="col">
-              <button class="product-card w-100 h-100" type="button" data-category="Café" data-price="4.50">
+            <div class="product-item">
+              <button class="product-card" type="button" data-category="Café" data-price="4.50">
                 <span class="product-picture tea-bg"><span>🍵</span></span>
                 <span class="product-copy"><strong>Matcha latte</strong><small>Matcha japonés · leche</small><b>$4.50 <i>+</i></b></span>
               </button>
             </div>
-            <div class="col">
-              <button class="product-card w-100 h-100" type="button" data-category="Panadería" data-price="2.75">
+            <div class="product-item">
+              <button class="product-card" type="button" data-category="Panadería" data-price="2.75">
                 <span class="product-picture bakery-bg"><span>🥐</span><em>Del día</em></span>
                 <span class="product-copy"><strong>Croissant</strong><small>Mantequilla · recién horneado</small><b>$2.75 <i>+</i></b></span>
               </button>
             </div>
-            <div class="col">
-              <button class="product-card w-100 h-100" type="button" data-category="Comida" data-price="6.50">
+            <div class="product-item">
+              <button class="product-card" type="button" data-category="Comida" data-price="6.50">
                 <span class="product-picture food-bg"><span>🥪</span></span>
                 <span class="product-copy"><strong>Sándwich de la casa</strong><small>Pavo · aguacate · pan rústico</small><b>$6.50 <i>+</i></b></span>
               </button>
             </div>
-            <div class="col">
-              <button class="product-card w-100 h-100" type="button" data-category="Frías" data-price="3.50">
+            <div class="product-item">
+              <button class="product-card" type="button" data-category="Frías" data-price="3.50">
                 <span class="product-picture juice-bg"><span>🍊</span></span>
                 <span class="product-copy"><strong>Jugo de naranja</strong><small>Natural · recién exprimido</small><b>$3.50 <i>+</i></b></span>
               </button>
             </div>
-            <div class="col">
-              <button class="product-card w-100 h-100" type="button" data-category="Panadería" data-price="3.25">
+            <div class="product-item">
+              <button class="product-card" type="button" data-category="Panadería" data-price="3.25">
                 <span class="product-picture dessert-bg"><span>🍰</span></span>
                 <span class="product-copy"><strong>Brownie</strong><small>Chocolate · nuez · artesanal</small><b>$3.25 <i>+</i></b></span>
               </button>
@@ -157,7 +154,7 @@
         </section>
 
         <!-- Ticket, cobro, cierre de turno y estado del almacenamiento local. -->
-        <aside class="right-column col-12 col-xl-4" aria-label="Cobro y cierre de caja">
+        <aside class="right-column" aria-label="Cobro y cierre de caja">
           <section class="ticket-panel" aria-labelledby="ticket-title">
             <div class="ticket-header">
               <div><p class="section-kicker">COBRO ACTUAL</p><h2 id="ticket-title">Ticket <span id="ticket-number">#0001</span></h2></div>
@@ -265,6 +262,6 @@
   </div>
   <!-- Avisos temporales para confirmar acciones y explicar errores. -->
   <div class="pos-toast" id="pos-toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=2" defer></script>
+  <script src="app.js?v=3" defer></script>
 </body>
 </html>

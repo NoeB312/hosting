@@ -275,7 +275,7 @@
       const product = getProductFromCard(card);
       const matchesCategory = selectedCategory === "Todos" || product.category === selectedCategory;
       const matchesQuery = normalize(`${product.name} ${product.description} ${product.category}`).includes(query);
-      card.closest(".col").hidden = !(matchesCategory && matchesQuery);
+      card.closest(".product-item").hidden = !(matchesCategory && matchesQuery);
     });
 
     elements.categories.forEach(button => {
