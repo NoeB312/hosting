@@ -75,11 +75,20 @@
 
   let needsStorageMigration = false;
   let state = loadState();
-  let ticket = new Map();
+  let ticket = new Map(state.draft.items.map(item => [item.id, item]));
   let selectedCategory = "Todos";
-  let selectedPayment = "cash";
+  let selectedPayment = state.draft.paymentMethod;
   let toastTimer;
   let dateRefreshTimer;
+  elements.cashReceived.value = state.draft.cashReceived;
+  elements.paymentRadios.forEach(input => {
+    input.checked = input.value === selectedPayment;
+  });
+
+  // Crea el borrador vacío que se conserva mientras se prepara una venta.
+  function emptyDraft() {
+    return { items: [], paymentMethod: "cash", cashReceived: "" };
+  }
 
   // Crea el estado vacío que se usa cuando no hay información guardada.
   function emptyState() {
@@ -91,8 +100,30 @@
       previousCashier: "",
       nextSaleNumber: 1,
       sales: [],
-      cuts: []
+      cuts: [],
+      draft: emptyDraft()
     };
+  }
+
+  // Comprueba el formato del ticket pendiente antes de volver a dibujarlo.
+  function isValidDraft(draft) {
+    return Boolean(
+      draft &&
+      Array.isArray(draft.items) &&
+      ["cash", "card", "transfer"].includes(draft.paymentMethod) &&
+      typeof draft.cashReceived === "string" &&
+      draft.items.every(item =>
+        item &&
+        typeof item.id === "string" &&
+        typeof item.name === "string" &&
+        typeof item.description === "string" &&
+        typeof item.category === "string" &&
+        Number.isFinite(item.price) &&
+        item.price >= 0 &&
+        Number.isInteger(item.quantity) &&
+        item.quantity > 0
+      )
+    );
   }
 
   // Recupera los datos y actualiza el formato anterior si fuera necesario.
@@ -113,6 +144,10 @@
       }
 
       const restored = { ...emptyState(), ...parsed, version: 2 };
+      if (!isValidDraft(restored.draft)) {
+        console.warn("El ticket pendiente guardado no es válido y se iniciará uno vacío.");
+        restored.draft = emptyDraft();
+      }
       if (parsed.version === 1) {
         needsStorageMigration = true;
         if (restored.activeShift && Number(restored.activeShift.openingCash) === 0) {
@@ -144,18 +179,35 @@
     }
   }
 
+  // Guarda el ticket pendiente, el método de pago y el efectivo ingresado.
+  function saveDraft() {
+    state.draft = {
+      items: [...ticket.values()],
+      paymentMethod: selectedPayment,
+      cashReceived: elements.cashReceived.value
+    };
+    return saveState();
+  }
+
   // Muestra un aviso temporal en la pantalla.
   function showToast(message) {
     elements.toast.textContent = message;
-    elements.toast.classList.add("visible");
+    elements.toast.classList.remove("d-none");
     window.clearTimeout(toastTimer);
-    toastTimer = window.setTimeout(() => elements.toast.classList.remove("visible"), 3200);
+    toastTimer = window.setTimeout(() => elements.toast.classList.add("d-none"), 3200);
   }
 
-  // Abre o cierra un diálogo y bloquea el desplazamiento del fondo.
+  // Usa el componente Modal de Bootstrap para gestionar foco y fondo.
   function setModalVisible(modal, visible) {
-    modal.hidden = !visible;
-    document.body.classList.toggle("modal-open", visible);
+    const modalInstance = bootstrap.Modal.getOrCreateInstance(modal);
+    if (visible) {
+      modal.addEventListener("shown.bs.modal", () => {
+        modal.querySelector("[data-autofocus]")?.focus();
+      }, { once: true });
+      modalInstance.show();
+    } else {
+      modalInstance.hide();
+    }
   }
 
   // Consulta las ventas del turno y suma importes por método de pago.
@@ -199,7 +251,10 @@
       ? `Caja 01 · Turno ${SHIFT_NAMES[shift.shiftIndex]}`
       : "Caja 01 · Cafetería";
     elements.cashoutStatus.textContent = isOpen ? "Abierto" : "Cerrado";
-    elements.cashoutStatus.classList.toggle("closed", !isOpen);
+    elements.shiftStatus.classList.toggle("text-bg-success", isOpen);
+    elements.shiftStatus.classList.toggle("text-bg-secondary", !isOpen);
+    elements.cashoutStatus.classList.toggle("text-bg-success", isOpen);
+    elements.cashoutStatus.classList.toggle("text-bg-secondary", !isOpen);
     elements.ticketCashier.textContent = shift ? `Atiende ${shift.cashier}` : "Inicia sesión para vender";
     elements.ticketFootnote.textContent = isOpen
       ? `Turno ${SHIFT_NAMES[shift.shiftIndex]} · ${shift.cashier}`
@@ -281,6 +336,8 @@
     elements.categories.forEach(button => {
       const active = button.dataset.category === selectedCategory;
       button.classList.toggle("current", active);
+      button.classList.toggle("btn-primary", active);
+      button.classList.toggle("btn-outline-primary", !active);
       button.setAttribute("aria-pressed", String(active));
     });
   }
@@ -297,24 +354,24 @@
 
     if (!items.length) {
       const empty = document.createElement("p");
-      empty.className = "empty-ticket";
+      empty.className = "empty-ticket text-secondary text-center py-3";
       empty.textContent = "Tu ticket está vacío. Agrega algo rico ♡";
       elements.ticketItems.append(empty);
     } else {
       items.forEach(item => {
         const row = document.createElement("div");
-        row.className = "ticket-item";
+        row.className = "ticket-item row align-items-start border-bottom py-2 g-2";
         row.innerHTML = `
-          <span class="item-qty">${item.quantity}×</span>
-          <div class="item-description">
-            <strong></strong><small>${money(item.price)} c/u</small>
-            <span class="quantity-controls">
-              <button type="button" data-ticket-action="decrease" aria-label="Quitar una unidad">−</button>
-              <button type="button" data-ticket-action="increase" aria-label="Agregar una unidad">+</button>
-              <button type="button" data-ticket-action="remove" aria-label="Eliminar producto">Quitar</button>
+          <span class="item-qty col-auto badge text-bg-secondary">${item.quantity}×</span>
+          <div class="item-description col">
+            <strong class="d-block"></strong><small class="d-block text-secondary">${money(item.price)} c/u</small>
+            <span class="quantity-controls d-flex flex-wrap gap-1 mt-2">
+              <button class="btn btn-sm btn-outline-secondary" type="button" data-ticket-action="decrease" aria-label="Quitar una unidad">−</button>
+              <button class="btn btn-sm btn-outline-secondary" type="button" data-ticket-action="increase" aria-label="Agregar una unidad">+</button>
+              <button class="btn btn-sm btn-outline-danger" type="button" data-ticket-action="remove" aria-label="Eliminar producto">Quitar</button>
             </span>
           </div>
-          <strong class="item-price">${money(item.price * item.quantity)}</strong>`;
+          <strong class="item-price col-auto">${money(item.price * item.quantity)}</strong>`;
         row.querySelector(".item-description strong").textContent = item.name;
         row.querySelector('[data-ticket-action="decrease"]').dataset.productId = item.id;
         row.querySelector('[data-ticket-action="increase"]').dataset.productId = item.id;
@@ -326,7 +383,7 @@
     const total = getTicketTotal();
     elements.subtotal.textContent = money(total);
     elements.total.textContent = money(total);
-    elements.chargeButton.firstChild.textContent = `Cobrar ${money(total)} `;
+    elements.chargeButton.textContent = `Cobrar ${money(total)} →`;
     elements.ticketNumber.textContent = `#${String(state.nextSaleNumber).padStart(4, "0")}`;
     elements.chargeButton.disabled = !state.activeShift || total <= 0;
     updatePaymentInterface();
@@ -359,8 +416,8 @@
     const difference = (Number(elements.countedCash.value) || 0) - expected;
     const sign = difference > 0 ? "+" : difference < 0 ? "−" : "";
     elements.cutDifference.textContent = `${sign}${money(Math.abs(difference))}`;
-    elements.cutDifference.classList.toggle("shortage", difference < 0);
-    elements.cutDifference.classList.toggle("surplus", difference > 0);
+    elements.cutDifference.classList.toggle("text-danger", difference < 0);
+    elements.cutDifference.classList.toggle("text-success", difference > 0);
   }
 
   // Abre el diálogo de corte, siempre que no haya una venta pendiente.
@@ -387,6 +444,7 @@
       const product = getProductFromCard(card);
       const item = ticket.get(product.id);
       ticket.set(product.id, { ...product, quantity: (item?.quantity || 0) + 1 });
+      saveDraft();
       renderTicket();
     });
   });
@@ -404,6 +462,7 @@
     } else {
       ticket.set(button.dataset.productId, item);
     }
+    saveDraft();
     renderTicket();
   });
 
@@ -417,8 +476,12 @@
   elements.paymentRadios.forEach(input => input.addEventListener("change", () => {
     selectedPayment = input.value;
     updatePaymentInterface();
+    saveDraft();
   }));
-  elements.cashReceived.addEventListener("input", updatePaymentInterface);
+  elements.cashReceived.addEventListener("input", () => {
+    updatePaymentInterface();
+    saveDraft();
+  });
 
   // Valida y guarda una venta; si falla el guardado conserva el ticket.
   elements.chargeButton.addEventListener("click", () => {
@@ -456,13 +519,21 @@
 
     state.sales.push(sale);
     state.nextSaleNumber += 1;
+    const previousDraft = state.draft;
+    state.draft = {
+      items: [],
+      paymentMethod: selectedPayment,
+      cashReceived: ""
+    };
     if (!saveState()) {
       state.sales.pop();
       state.nextSaleNumber -= 1;
+      state.draft = previousDraft;
       return;
     }
     ticket.clear();
     elements.cashReceived.value = "";
+    saveDraft();
     renderTicket();
     updateShiftInterface();
     showToast(`Venta ${String(sale.id).padStart(4, "0")} guardada. Cambio: ${money(sale.change)}.`);
@@ -591,13 +662,11 @@
     showToast(`¡Hola, ${cashier}! Turno ${SHIFT_NAMES[openedShift.shiftIndex]} iniciado.`);
   });
 
-  // Escape cancela el corte, pero no permite omitir el inicio de sesión.
+  // Escape no permite cerrar el diálogo obligatorio de inicio de turno.
   document.addEventListener("keydown", event => {
-    if (event.key === "Escape" && !elements.cashierModal.hidden) {
+    if (event.key === "Escape" && elements.cashierModal.classList.contains("show")) {
       event.preventDefault();
       showToast("Inicia sesión para usar la caja.");
-    } else if (event.key === "Escape" && !elements.cutModal.hidden) {
-      setModalVisible(elements.cutModal, false);
     }
   });
 
