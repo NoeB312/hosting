@@ -6,44 +6,8 @@
   <meta name="theme-color" content="#f7f5f0">
   <title>Grano — Punto de venta</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%8D%B5%3C/text%3E%3C/svg%3E">
-  <!-- Estilos esenciales en línea: el encabezado y la rejilla se pintan de inmediato. -->
-  <style>
-    :root{color-scheme:light;--ink:#594c59;--paper:#fff7fa;--white:#fffdfd;--line:#f0dfeb;--ui:system-ui,-apple-system,"Segoe UI",sans-serif}
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 var(--ui)}
-    .app-shell{min-height:100vh}
-    .sidebar{position:fixed;z-index:10;right:0;bottom:0;left:0;display:flex;width:100%;min-height:64px;flex-direction:row;padding:4px 8px;border-top:1px solid var(--line);background:var(--white)}
-    .brand,.nav-caption,.sidebar-bottom{display:none}
-    .side-nav{display:flex;width:100%;justify-content:space-around;gap:4px}
-    .nav-link{display:flex;min-width:0;min-height:54px;flex:1;flex-direction:column;align-items:center;justify-content:center;padding:4px 2px;color:inherit;font-size:10px;text-align:center;text-decoration:none}
-    .main-content{width:100%;max-width:1600px;min-width:0;margin:0 auto;padding:20px 12px 88px}
-    .page-header{display:flex;align-items:flex-start;flex-direction:column;gap:12px;margin-bottom:16px}
-    h1,h2,p{margin-top:0}
-    h1,h2{font-family:var(--ui)}
-    h1{margin-bottom:3px;font-size:26px}
-    .date-label,.page-subtitle{margin:0}
-    .summary-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-bottom:16px}
-    .summary-card{display:flex;min-width:0;min-height:82px;flex-direction:column;gap:5px;padding:9px;border:1px solid var(--line);border-radius:16px;background:var(--white)}
-    .summary-card p{margin:0;font-size:10px}
-    .summary-card strong{display:block;overflow-wrap:anywhere}
-    .pos-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:1rem}
-    .catalog-panel,.ticket-panel,.cashout-panel,.storage-panel{min-width:0;border:1px solid var(--line);border-radius:18px;background:var(--white)}
-    .catalog-panel{padding:14px}
-    .section-header{display:flex;flex-direction:column;gap:10px}
-    .search-box{position:relative;width:100%}
-    .search-box input{width:100%;height:44px}
-    .product-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem}
-    .product-item{min-width:0}
-    .product-item[hidden]{display:none}
-    .product-card{width:100%;height:100%;overflow:hidden;padding:0;border:1px solid var(--line);border-radius:15px;background:#fff;text-align:left}
-    .product-picture{position:relative;display:grid;height:88px;place-items:center}
-    @media(min-width:768px){.main-content{padding:24px 24px 96px}.page-header{align-items:center;flex-direction:row}.section-header{align-items:end;flex-direction:row}.product-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-    @media(min-width:992px){.app-shell{display:flex}.sidebar{position:sticky;top:0;right:auto;bottom:auto;left:auto;width:200px;height:100vh;min-height:0;flex:0 0 200px;flex-direction:column;padding:27px 14px 18px;border-top:0;border-right:1px solid var(--line)}.brand,.nav-caption,.sidebar-bottom{display:block}.side-nav{display:grid;width:auto}.nav-link{flex-direction:row;justify-content:flex-start}.main-content{width:auto;flex:1;padding:27px 22px 38px}}
-    @media(min-width:1200px){.pos-layout{grid-template-columns:minmax(0,2fr) minmax(300px,1fr)}.sidebar{width:220px;flex-basis:220px}.main-content{padding-right:30px;padding-left:30px}}
-  </style>
-  <!-- Carga el resto de estilos sin bloquear el primer pintado. -->
-  <link rel="preload" href="styles.css?v=4" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link rel="stylesheet" href="styles.css?v=4"></noscript>
+  <!-- Carga una sola hoja completa antes del primer pintado para evitar cambios de diseño. -->
+  <link rel="stylesheet" href="styles.css?v=5">
 </head>
 <body>
   <!-- Estructura principal: navegación y contenido de la caja. -->
