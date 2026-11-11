@@ -1,8 +1,12 @@
 (() => {
   "use strict";
 
-  // Configuración: clave del almacenamiento, fondo inicial y nombres de turnos.
+  // Configuración de IndexedDB, fondo inicial y nombres de turnos.
   const STORAGE_KEY = "grano-pos-v1";
+  const DATABASE_NAME = "grano-pos";
+  const DATABASE_VERSION = 1;
+  const STORE_NAME = "pos-state";
+  const STATE_RECORD_ID = "current";
   const DEFAULT_OPENING_CASH = 500;
   const SHIFT_NAMES = ["Mañana", "Tarde", "Noche"];
   const money = value => new Intl.NumberFormat("es-MX", {
@@ -58,6 +62,7 @@
     expectedCash: document.getElementById("expected-cash"),
     cashoutStatus: document.getElementById("cashout-status"),
     closeShiftButton: document.getElementById("close-shift"),
+    storageStatus: document.getElementById("storage-status"),
     storageSummary: document.getElementById("storage-summary"),
     cutModal: document.getElementById("cut-modal"),
     cutForm: document.getElementById("cut-form"),
@@ -74,10 +79,13 @@
   };
 
   let needsStorageMigration = false;
-  let state = loadState();
+  let databasePromise;
+  let writeQueue = Promise.resolve();
+  let state = emptyState();
   let ticket = new Map(state.draft.items.map(item => [item.id, item]));
   let selectedCategory = "Todos";
   let selectedPayment = state.draft.paymentMethod;
+  let saleInProgress = false;
   let toastTimer;
   let dateRefreshTimer;
   elements.cashReceived.value = state.draft.cashReceived;
@@ -126,67 +134,105 @@
     );
   }
 
-  // Recupera los datos y actualiza el formato anterior si fuera necesario.
-  function loadState() {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (!stored) return emptyState();
-      const parsed = JSON.parse(stored);
-      if (
-        ![1, 2].includes(parsed?.version) ||
-        !Array.isArray(parsed.sales) ||
-        !Array.isArray(parsed.cuts) ||
-        !Number.isInteger(parsed.nextShiftIndex) ||
-        parsed.nextShiftIndex < 0 ||
-        parsed.nextShiftIndex > 2
-      ) {
-        throw new Error("El formato de los datos guardados no es válido.");
+  function openDatabase() {
+    return new Promise((resolve, reject) => {
+      if (!("indexedDB" in window)) {
+        reject(new Error("Este navegador no es compatible con IndexedDB."));
+        return;
       }
 
-      const restored = { ...emptyState(), ...parsed, version: 2 };
-      if (!isValidDraft(restored.draft)) {
-        console.warn("El ticket pendiente guardado no es válido y se iniciará uno vacío.");
-        restored.draft = emptyDraft();
-      }
-      if (parsed.version === 1) {
-        needsStorageMigration = true;
-        if (restored.activeShift && Number(restored.activeShift.openingCash) === 0) {
-          restored.activeShift.openingCash = DEFAULT_OPENING_CASH;
+      const request = window.indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
+      request.onupgradeneeded = () => {
+        const database = request.result;
+        if (!database.objectStoreNames.contains(STORE_NAME)) {
+          database.createObjectStore(STORE_NAME, { keyPath: "id" });
         }
-      }
-      if (!restored.activeShift && restored.businessDate < localDate()) {
-        restored.businessDate = localDate();
-        restored.nextShiftIndex = 0;
-        restored.previousCashier = "";
-      }
-      return restored;
-    } catch (error) {
-      console.error("No se pudieron leer los datos guardados del punto de venta.", error);
-      window.alert("No se pudieron leer los datos guardados. Se iniciará una caja nueva; el historial anterior sigue en el almacenamiento del navegador.");
-      return emptyState();
-    }
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error || new Error("No se pudo abrir IndexedDB."));
+      request.onblocked = () => reject(new Error("IndexedDB está bloqueada por otra pestaña abierta."));
+    });
   }
 
-  // Guarda ventas y turnos localmente en este navegador.
-  function saveState() {
+  function readDatabaseState(database) {
+    return new Promise((resolve, reject) => {
+      const transaction = database.transaction(STORE_NAME, "readonly");
+      const request = transaction.objectStore(STORE_NAME).get(STATE_RECORD_ID);
+      request.onsuccess = () => resolve(request.result?.value ?? null);
+      request.onerror = () => reject(request.error || new Error("No se pudieron leer los datos de IndexedDB."));
+      transaction.onabort = () => reject(transaction.error || new Error("Se canceló la lectura de IndexedDB."));
+    });
+  }
+
+  function writeDatabaseState(database, nextState) {
+    return new Promise((resolve, reject) => {
+      const transaction = database.transaction(STORE_NAME, "readwrite");
+      transaction.objectStore(STORE_NAME).put({ id: STATE_RECORD_ID, value: nextState });
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error || new Error("No se pudieron guardar los datos en IndexedDB."));
+      transaction.onabort = () => reject(transaction.error || new Error("Se canceló el guardado en IndexedDB."));
+    });
+  }
+
+  // Valida y actualiza el formato persistido antes de mostrarlo.
+  function restoreState(parsed) {
+    if (
+      ![1, 2].includes(parsed?.version) ||
+      !Array.isArray(parsed.sales) ||
+      !Array.isArray(parsed.cuts) ||
+      !Number.isInteger(parsed.nextShiftIndex) ||
+      parsed.nextShiftIndex < 0 ||
+      parsed.nextShiftIndex > 2
+    ) {
+      throw new Error("El formato de los datos guardados no es válido.");
+    }
+
+    const restored = { ...emptyState(), ...parsed, version: 2 };
+    if (!isValidDraft(restored.draft)) {
+      console.warn("El ticket pendiente guardado no es válido y se iniciará uno vacío.");
+      restored.draft = emptyDraft();
+    }
+    if (parsed.version === 1) {
+      needsStorageMigration = true;
+      if (restored.activeShift && Number(restored.activeShift.openingCash) === 0) {
+        restored.activeShift.openingCash = DEFAULT_OPENING_CASH;
+      }
+    }
+    if (!restored.activeShift && restored.businessDate < localDate()) {
+      restored.businessDate = localDate();
+      restored.nextShiftIndex = 0;
+      restored.previousCashier = "";
+    }
+    return restored;
+  }
+
+  // Guarda una instantánea en orden para evitar que escrituras rápidas se pisen.
+  async function saveState() {
+    const snapshot = JSON.parse(JSON.stringify(state));
+    const write = writeQueue.then(async () => {
+      const database = await databasePromise;
+      await writeDatabaseState(database, snapshot);
+    });
+    writeQueue = write.catch(() => {});
+
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      await write;
       return true;
     } catch (error) {
       console.error("No se pudieron guardar los datos del punto de venta.", error);
-      showToast("No se pudo guardar en este navegador. Revisa el almacenamiento disponible.");
+      showToast("No se pudo guardar en IndexedDB. Revisa el almacenamiento disponible.");
       return false;
     }
   }
 
   // Guarda el ticket pendiente, el método de pago y el efectivo ingresado.
-  function saveDraft() {
+  async function saveDraft() {
     state.draft = {
       items: [...ticket.values()],
       paymentMethod: selectedPayment,
       cashReceived: elements.cashReceived.value
     };
-    return saveState();
+    return await saveState();
   }
 
   // Muestra un aviso temporal en la pantalla.
@@ -272,7 +318,7 @@
     elements.dailyOrders.textContent = String(dailyTotals.count);
     elements.averageTicket.textContent = money(dailyTotals.count ? dailyTotals.amount / dailyTotals.count : 0);
     elements.storageSummary.textContent =
-      `${state.sales.length} venta(s) y ${state.cuts.length} corte(s) guardados en este navegador.`;
+      `${state.sales.length} venta(s) y ${state.cuts.length} corte(s) guardados en IndexedDB.`;
     setLocked(!isOpen);
   }
 
@@ -439,17 +485,17 @@
 
   // Eventos del catálogo y los botones para ajustar el ticket.
   elements.products.forEach(card => {
-    card.addEventListener("click", () => {
+    card.addEventListener("click", async () => {
       if (!state.activeShift) return;
       const product = getProductFromCard(card);
       const item = ticket.get(product.id);
       ticket.set(product.id, { ...product, quantity: (item?.quantity || 0) + 1 });
-      saveDraft();
+      await saveDraft();
       renderTicket();
     });
   });
 
-  elements.ticketItems.addEventListener("click", event => {
+  elements.ticketItems.addEventListener("click", async event => {
     const button = event.target.closest("[data-ticket-action]");
     if (!button) return;
     const item = ticket.get(button.dataset.productId);
@@ -462,7 +508,7 @@
     } else {
       ticket.set(button.dataset.productId, item);
     }
-    saveDraft();
+    await saveDraft();
     renderTicket();
   });
 
@@ -470,21 +516,21 @@
   elements.search.addEventListener("input", renderCatalog);
   elements.categories.forEach(button => button.addEventListener("click", () => {
     selectedCategory = button.dataset.category;
-    if (needsStorageMigration) saveState();
     renderCatalog();
   }));
-  elements.paymentRadios.forEach(input => input.addEventListener("change", () => {
+  elements.paymentRadios.forEach(input => input.addEventListener("change", async () => {
     selectedPayment = input.value;
     updatePaymentInterface();
-    saveDraft();
+    await saveDraft();
   }));
-  elements.cashReceived.addEventListener("input", () => {
+  elements.cashReceived.addEventListener("input", async () => {
     updatePaymentInterface();
-    saveDraft();
+    await saveDraft();
   });
 
   // Valida y guarda una venta; si falla el guardado conserva el ticket.
-  elements.chargeButton.addEventListener("click", () => {
+  elements.chargeButton.addEventListener("click", async () => {
+    if (saleInProgress) return;
     const total = getTicketTotal();
     const received = Number(elements.cashReceived.value) || 0;
     if (!state.activeShift || total <= 0) {
@@ -497,6 +543,8 @@
       return;
     }
 
+    saleInProgress = true;
+    setLocked(true);
     const sale = {
       id: state.nextSaleNumber,
       date: state.businessDate,
@@ -525,15 +573,18 @@
       paymentMethod: selectedPayment,
       cashReceived: ""
     };
-    if (!saveState()) {
+    if (!await saveState()) {
       state.sales.pop();
       state.nextSaleNumber -= 1;
       state.draft = previousDraft;
+      saleInProgress = false;
+      updateShiftInterface();
+      renderTicket();
       return;
     }
+    saleInProgress = false;
     ticket.clear();
     elements.cashReceived.value = "";
-    saveDraft();
     renderTicket();
     updateShiftInterface();
     showToast(`Venta ${String(sale.id).padStart(4, "0")} guardada. Cambio: ${money(sale.change)}.`);
@@ -552,7 +603,7 @@
   document.getElementById("cancel-cut").addEventListener("click", () => setModalVisible(elements.cutModal, false));
   elements.countedCash.addEventListener("input", updateCashCutPreview);
 
-  elements.cutForm.addEventListener("submit", event => {
+  elements.cutForm.addEventListener("submit", async event => {
     event.preventDefault();
     const shift = state.activeShift;
     if (!shift) return;
@@ -604,7 +655,7 @@
       state.nextShiftIndex = shift.shiftIndex + 1;
     }
     state.activeShift = null;
-    if (!saveState()) {
+    if (!await saveState()) {
       state = JSON.parse(previousState);
       updateShiftInterface();
       return;
@@ -616,7 +667,7 @@
   });
 
   // Valida el nuevo cajero y guarda la apertura del siguiente turno.
-  elements.cashierForm.addEventListener("submit", event => {
+  elements.cashierForm.addEventListener("submit", async event => {
     event.preventDefault();
     if (state.activeShift) return;
 
@@ -650,7 +701,7 @@
     const previousCashier = state.previousCashier;
     state.previousCashier = "";
     elements.cashierForm.reset();
-    if (!saveState()) {
+    if (!await saveState()) {
       state.activeShift = null;
       state.previousCashier = previousCashier;
       elements.cashierError.textContent = "No se pudo guardar el turno. Verifica el almacenamiento e inténtalo de nuevo.";
@@ -670,13 +721,67 @@
     }
   });
 
-  // Dibuja la pantalla inicial y mantiene actualizada la fecha local.
-  updateDateLabel();
+  async function initializeStorage() {
+    elements.storageStatus.textContent = "Conectando";
+    elements.storageSummary.textContent = "Conectando con la base de datos local...";
+    setLocked(true);
+
+    try {
+      databasePromise = openDatabase();
+      const database = await databasePromise;
+      const storedState = await readDatabaseState(database);
+      let migrateLegacyState = false;
+
+      if (storedState) {
+        state = restoreState(storedState);
+      } else {
+        let legacyData = null;
+        try {
+          legacyData = localStorage.getItem(STORAGE_KEY);
+        } catch (error) {
+          console.warn("No se pudieron consultar datos heredados de localStorage.", error);
+        }
+        if (legacyData) {
+          state = restoreState(JSON.parse(legacyData));
+          migrateLegacyState = true;
+        } else {
+          state = emptyState();
+        }
+      }
+
+      if (needsStorageMigration || migrateLegacyState) {
+        if (!await saveState()) {
+          throw new Error("No se pudieron migrar los datos existentes a IndexedDB.");
+        }
+      }
+
+      needsStorageMigration = false;
+      ticket = new Map(state.draft.items.map(item => [item.id, item]));
+      selectedPayment = state.draft.paymentMethod;
+      elements.cashReceived.value = state.draft.cashReceived;
+      elements.paymentRadios.forEach(input => {
+        input.checked = input.value === selectedPayment;
+      });
+      elements.storageStatus.textContent = "IndexedDB";
+      elements.storageStatus.className = "badge text-bg-success";
+      updateDateLabel();
+      renderCatalog();
+      renderTicket();
+      updateShiftInterface();
+      if (!state.activeShift) openCashierModal();
+    } catch (error) {
+      console.error("No se pudo iniciar el almacenamiento del punto de venta.", error);
+      elements.storageStatus.textContent = "Error";
+      elements.storageStatus.className = "badge text-bg-danger";
+      elements.storageSummary.textContent =
+        "IndexedDB no está disponible. La caja permanece bloqueada para proteger los datos.";
+      window.alert(`No se pudo iniciar la base de datos local: ${error.message}`);
+    }
+  }
+
+  // Mantiene actualizada la fecha local aunque la pestaña vuelva del segundo plano.
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) updateDateLabel();
   });
-  renderCatalog();
-  renderTicket();
-  updateShiftInterface();
-  if (!state.activeShift) openCashierModal();
+  initializeStorage();
 })();
