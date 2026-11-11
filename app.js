@@ -40,6 +40,7 @@
     search: document.getElementById("product-search"),
     categories: [...document.querySelectorAll(".category-pill")],
     products: [...document.querySelectorAll(".product-card")],
+    productCount: document.getElementById("product-count"),
     ticketItems: document.getElementById("ticket-items"),
     ticketNumber: document.getElementById("ticket-number"),
     ticketCashier: document.getElementById("ticket-cashier"),
@@ -372,6 +373,7 @@
   // Filtra el catálogo por texto y por la categoría seleccionada.
   function renderCatalog() {
     const query = normalize(elements.search.value);
+    elements.productCount.textContent = String(elements.products.length);
     elements.products.forEach(card => {
       const product = getProductFromCard(card);
       const matchesCategory = selectedCategory === "Todos" || product.category === selectedCategory;
